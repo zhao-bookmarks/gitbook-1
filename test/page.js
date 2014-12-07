@@ -6,7 +6,7 @@ var page = require('../').parse.page;
 
 function loadPage (name, options) {
     var CONTENT = fs.readFileSync(path.join(__dirname, './fixtures/' + name + '.md'), 'utf8');
-    return page(CONTENT, options);
+    return page(CONTENT, options).sections;
 }
 
 var LEXED = loadPage('PAGE', {
@@ -78,24 +78,8 @@ describe('Page parsing', function() {
 
 
 describe('Relative links', function() {
-    it('should be resolved to their GitHub counterparts', function() {
-        var LEXED = loadPage('GITHUB_LINKS', {
-            // GitHub repo ID
-            repo: 'GitBookIO/javascript',
-
-            // Imaginary folder of markdown file
-            dir: 'course',
-            outdir: './'
-        });
-
-        assert(LEXED[0].content.indexOf('https://github.com/GitBookIO/javascript/blob/src/something.cpp') !== -1);
-    });
-
     it('should replace link to .md by link to .html', function() {
         var LEXED = loadPage('MARKDOWN_LINKS', {
-            // GitHub repo ID
-            repo: 'GitBookIO/javascript',
-
             // Imaginary folder of markdown file
             dir: 'course',
             outdir: 'course'
@@ -104,29 +88,11 @@ describe('Relative links', function() {
         assert(LEXED[0].content.indexOf('test.html') !== -1);
         assert(LEXED[0].content.indexOf('../before.html') !== -1);
     });
-
-    it('should replace link to .md  by link to page in format single page', function() {
-        var LEXED = loadPage('MARKDOWN_LINKS', {
-            // GitHub repo ID
-            repo: 'GitBookIO/javascript',
-
-            // Imaginary folder of markdown file
-            dir: 'course',
-            outdir: './',
-            singleFile: true
-        });
-
-        assert(LEXED[0].content.indexOf('#course/test.md') !== -1);
-        assert(LEXED[0].content.indexOf('#before.md') !== -1);
-    });
 });
 
 describe('Relative images', function() {
     it('should keep image relative with considering output directory in site format', function() {
         var LEXED = loadPage('IMAGES', {
-            // GitHub repo ID
-            repo: 'GitBookIO/javascript',
-
             // Imaginary folder of markdown file
             dir: 'syntax',
             outdir: 'syntax'
@@ -138,9 +104,6 @@ describe('Relative images', function() {
 
     it('should keep image relative with considering output directory in page format', function() {
         var LEXED = loadPage('IMAGES', {
-            // GitHub repo ID
-            repo: 'GitBookIO/javascript',
-
             // Imaginary folder of markdown file
             dir: 'syntax',
             outdir: './'
@@ -148,5 +111,13 @@ describe('Relative images', function() {
 
         assert(LEXED[0].content.indexOf('"syntax/preview.png"') !== -1);
         assert(LEXED[0].content.indexOf('"preview2.png"') !== -1);
+    });
+});
+
+describe('Section parsing', function() {
+    it('should not have false positive quiz parsing', function() {
+        var LEXED = loadPage('FALSE_QUIZ');
+
+        assert.equal(LEXED[0].type, 'normal');
     });
 });

@@ -7,13 +7,14 @@ var prog = require('commander');
 var tinylr = require('tiny-lr-fork');
 
 var pkg = require('../package.json');
-var generators = require("../lib/generate").generators;
+var genbook = require("../lib/generate");
 var initDir = require("../lib/generate/init");
 var fs = require('../lib/generate/fs');
 
 var utils = require('./utils');
 var build = require('./build');
 var Server = require('./server');
+var platform = require("./platform");
 
 // General options
 prog
@@ -45,7 +46,6 @@ build.command(prog.command('serve [source_dir]'))
         server.stop()
         .then(function() {
             return build.folder(dir, _.extend(options || {}, {
-                cache: false,
                 defaultsPlugins: ["livereload"]
             }));
         })
@@ -78,6 +78,30 @@ build.command(prog.command('serve [source_dir]'))
     console.log('Press CTRL+C to quit ...');
     console.log('')
     generate();
+});
+
+build.commandEbook(prog.command('install [source_dir]'))
+.description('Install plugins for a book')
+.action(function(dir, options) {
+    dir = dir || process.cwd();
+    
+    console.log("Install plugins in", dir);
+    genbook.config.read({
+        input: dir
+    })
+    .then(function(options) {
+        return genbook.Plugin.install(options);
+    })
+    .then(function() {
+        console.log("Successfully installed plugins!");
+    })
+    .fail(function(err) {
+        // Log error
+        utils.logError(err);
+
+        // Exit process with failure code
+        process.exit(-1);
+    });
 });
 
 build.commandEbook(prog.command('pdf [source_dir]'))
@@ -113,6 +137,22 @@ prog
 .action(function(dir) {
     dir = dir || process.cwd();
     return initDir(dir);
+});
+
+prog
+.command('publish [source_dir]')
+.description('Publish content to the associated gitbook.io book')
+.action(function(dir) {
+    dir = dir || process.cwd();
+    return platform.publish(dir);
+});
+
+prog
+.command('git:remote [source_dir] [book_id]')
+.description('Adds a git remote to a book repository')
+.action(function(dir, bookId) {
+    dir = dir || process.cwd();
+    return platform.remote(dir, bookId);
 });
 
 // Parse and fallback to help if no args
